@@ -33,7 +33,7 @@
     user-select:none;
     -webkit-user-select:none;
   }
-  h1,h2,.q,.pad button,.mode-btn,.big-btn,.chip{ font-family:'Fredoka','Nunito',system-ui,sans-serif; }
+  h1,h2,.q,.pad button,.mode-btn,.big-btn,.chip,.diff-btn{ font-family:'Fredoka','Nunito',system-ui,sans-serif; }
 
   /* Sternenhimmel */
   #sky{ position:fixed; inset:0; pointer-events:none; z-index:0; }
@@ -52,16 +52,16 @@
   .screen.active{ display:flex; }
 
   /* ---------- Startscreen ---------- */
-  #screen-start{ justify-content:center; gap:18px; text-align:center; }
+  #screen-start{ justify-content:center; gap:16px; text-align:center; }
   .logo{ font-size:clamp(1.8rem, 6.5vmin, 3rem); font-weight:700; margin:0; line-height:1.1; }
   .logo .x{ color:var(--star); }
   .tagline{ color:var(--muted); margin:0; font-size:clamp(.95rem,2.6vmin,1.15rem); }
 
   .panel{
     background:var(--card); border:2px solid var(--line); border-radius:var(--radius);
-    padding:16px; width:min(560px, 100%);
+    padding:14px 16px; width:min(560px, 100%);
   }
-  .panel h2{ margin:0 0 12px; font-size:1.15rem; font-weight:600; color:var(--cyan); letter-spacing:.02em; }
+  .panel h2{ margin:0 0 12px; font-size:1.1rem; font-weight:600; color:var(--cyan); letter-spacing:.02em; }
 
   .chips{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .chip{
@@ -80,9 +80,21 @@
   }
   .mini-btn:active{ transform:scale(.95); }
 
+  .diff{ display:flex; gap:10px; justify-content:center; }
+  .diff-btn{
+    border-radius:999px; padding:12px 20px;
+    font-size:clamp(1rem,3.4vmin,1.2rem); font-weight:600;
+    background:var(--card-2); color:var(--muted);
+    border:2px solid var(--line); cursor:pointer;
+    transition:transform .08s, background .15s, color .15s;
+  }
+  .diff-btn.on{ background:var(--cyan); color:#083035; border-color:var(--cyan); }
+  .diff-btn:active{ transform:scale(.94); }
+  .diff-hint{ margin:10px 0 0; color:var(--muted); font-weight:800; font-size:.85rem; }
+
   .modes{ display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(560px,100%); }
   .mode-btn{
-    border:none; border-radius:var(--radius); padding:18px 10px;
+    border:none; border-radius:var(--radius); padding:16px 10px;
     font-size:clamp(1.1rem,3.5vmin,1.4rem); font-weight:600; cursor:pointer;
     color:#0d2b16; background:var(--ok);
     display:flex; flex-direction:column; gap:4px; align-items:center;
@@ -133,14 +145,14 @@
     align-items:center; justify-content:center; gap:6px; position:relative; min-height:0;
   }
   .q{
-    font-size:clamp(2rem, 9vmin, 4rem); font-weight:600; margin:0;
+    font-size:clamp(1.9rem, 8.5vmin, 3.8rem); font-weight:600; margin:0;
     letter-spacing:.02em; white-space:nowrap;
   }
   .q .mal{ color:var(--star); }
   .q .qm{ color:var(--cyan); }
   .answer{
     min-width:3.6em; text-align:center;
-    font-family:'Fredoka'; font-size:clamp(1.8rem, 8vmin, 3.2rem); font-weight:600;
+    font-family:'Fredoka'; font-size:clamp(1.7rem, 7.5vmin, 3rem); font-weight:600;
     background:var(--card); border:3px dashed var(--line); border-radius:18px;
     padding:2px 18px; min-height:1.5em; line-height:1.5em;
   }
@@ -156,19 +168,20 @@
   .feedback.bad{ color:var(--bad); }
 
   .pad{
-    width:min(430px,100%); display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    width:min(430px,100%); display:grid; grid-template-columns:repeat(3,1fr); gap:9px;
     padding-bottom:4px;
   }
   .pad button{
-    border:none; border-radius:18px; min-height:clamp(54px, 9.5vh, 76px);
-    font-size:clamp(1.5rem, 5vmin, 2.1rem); font-weight:600;
+    border:none; border-radius:16px; min-height:clamp(44px, 7.4vh, 62px);
+    font-size:clamp(1.4rem, 4.6vmin, 2rem); font-weight:600;
     background:var(--card-2); color:var(--text); cursor:pointer;
     border-bottom:4px solid rgba(0,0,0,.35);
     transition:transform .06s;
   }
   .pad button:active{ transform:scale(.94); }
   .pad .del{ background:var(--card); color:var(--muted); }
-  .pad .go{ background:var(--ok); color:#0d2b16; }
+  .pad .comma{ background:var(--card); color:var(--cyan); }
+  .pad .go{ background:var(--ok); color:#0d2b16; grid-column:1 / -1; min-height:clamp(46px, 7.8vh, 64px); }
 
   /* Konfetti-Sterne */
   .spark{
@@ -220,6 +233,15 @@
     </div>
   </div>
 
+  <div class="panel">
+    <h2>Wie schwer soll es sein?</h2>
+    <div class="diff">
+      <button class="diff-btn on" id="btn-easy">🙂 Leicht</button>
+      <button class="diff-btn" id="btn-pro">🧠 Profi</button>
+    </div>
+    <p class="diff-hint" id="diff-hint">Leicht: nur ganze Zahlen, z.&nbsp;B. 3 kg = 3000 g</p>
+  </div>
+
   <div class="modes">
     <button class="mode-btn" id="btn-train">🧑‍🚀 Training<small>12 Aufgaben, ohne Zeit</small></button>
     <button class="mode-btn blitz" id="btn-blitz">⚡ Blitzrunde<small>60 Sekunden</small></button>
@@ -254,7 +276,8 @@
     <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
     <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
     <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
-    <button class="del" data-a="del">⌫</button><button data-d="0">0</button><button class="go" data-a="go">✔</button>
+    <button class="comma" data-a="comma">,</button><button data-d="0">0</button><button class="del" data-a="del">⌫</button>
+    <button class="go" data-a="go">✔</button>
   </div>
 </section>
 
@@ -277,38 +300,79 @@
   const pick = arr => arr[rnd(arr.length)];
   const PRAISE = ["Super!","Klasse!","Stark!","Genau!","Toll gemacht!","Weiter so!","Raketenstark!","Perfekt!"];
 
-  /* ---------- Umrechnungs-Kategorien ---------- */
-  /* Jede Variante liefert: Wert, Von-Einheit, Ziel-Einheit, Antwort (immer ganzzahlig) */
+  /* Zahl kindgerecht formatieren: Komma statt Punkt, keine überflüssigen Nullen */
+  function fmt(n){
+    return (Math.round(n*100)/100).toString().replace(".", ",");
+  }
+
+  /* ---------- Umrechnungs-Kategorien ----------
+     easy: nur ganze Zahlen
+     pro:  Kommazahlen mit bis zu 2 Nachkommastellen             */
   const CATS = [
-    { key:"gkg",  label:"⚖️ Gewichte", variants:[
+    { key:"gkg", label:"⚖️ Gewichte",
+      easy:[
         ()=>{ const n=1+rnd(9); return {v:n, from:"kg", to:"g", ans:n*1000}; },
         ()=>{ const n=1+rnd(9); return {v:n*1000, from:"g", to:"kg", ans:n}; }
-    ]},
-    { key:"mll",  label:"🥤 Flüssigkeiten", variants:[
+      ],
+      pro:[
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i+d/100, from:"kg", to:"g", ans:i*1000+d*10}; },
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i*1000+d*10, from:"g", to:"kg", ans:i+d/100}; }
+      ]
+    },
+    { key:"mll", label:"🥤 Flüssigkeiten",
+      easy:[
         ()=>{ const n=1+rnd(9); return {v:n, from:"l", to:"ml", ans:n*1000}; },
         ()=>{ const n=1+rnd(9); return {v:n*1000, from:"ml", to:"l", ans:n}; }
-    ]},
-    { key:"smin", label:"⏱️ Minuten & Sekunden", variants:[
+      ],
+      pro:[
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i+d/100, from:"l", to:"ml", ans:i*1000+d*10}; },
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i*1000+d*10, from:"ml", to:"l", ans:i+d/100}; }
+      ]
+    },
+    { key:"smin", label:"⏱️ Minuten & Sekunden",
+      easy:[
         ()=>{ const n=1+rnd(9); return {v:n, from:"min", to:"s", ans:n*60}; },
         ()=>{ const n=1+rnd(9); return {v:n*60, from:"s", to:"min", ans:n}; }
-    ]},
-    { key:"minh", label:"🕐 Stunden & Minuten", variants:[
+      ],
+      pro:[
+        ()=>{ const n=rnd(8)+0.5; return {v:n, from:"min", to:"s", ans:n*60}; },
+        ()=>{ const n=rnd(8)+0.5; return {v:n*60, from:"s", to:"min", ans:n}; }
+      ]
+    },
+    { key:"minh", label:"🕐 Stunden & Minuten",
+      easy:[
         ()=>{ const n=1+rnd(9); return {v:n, from:"h", to:"min", ans:n*60}; },
         ()=>{ const n=1+rnd(9); return {v:n*60, from:"min", to:"h", ans:n}; }
-    ]},
-    { key:"len",  label:"📏 Längen", variants:[
+      ],
+      pro:[
+        ()=>{ const n=rnd(8)+pick([.25,.5,.75]); return {v:n, from:"h", to:"min", ans:n*60}; },
+        ()=>{ const n=rnd(8)+pick([.25,.5,.75]); return {v:n*60, from:"min", to:"h", ans:n}; }
+      ]
+    },
+    { key:"len", label:"📏 Längen",
+      easy:[
         ()=>{ const n=1+rnd(9); return {v:n, from:"cm", to:"mm", ans:n*10}; },
         ()=>{ const n=1+rnd(9); return {v:n*10, from:"mm", to:"cm", ans:n}; },
         ()=>{ const n=1+rnd(9); return {v:n, from:"m", to:"cm", ans:n*100}; },
         ()=>{ const n=1+rnd(9); return {v:n*100, from:"cm", to:"m", ans:n}; },
         ()=>{ const n=1+rnd(5); return {v:n, from:"m", to:"mm", ans:n*1000}; },
         ()=>{ const n=1+rnd(5); return {v:n*1000, from:"mm", to:"m", ans:n}; }
-    ]}
+      ],
+      pro:[
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i+d/100, from:"m", to:"cm", ans:i*100+d}; },
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i*100+d, from:"cm", to:"m", ans:i+d/100}; },
+        ()=>{ const i=rnd(9), d=1+rnd(9);  return {v:i+d/10, from:"cm", to:"mm", ans:i*10+d}; },
+        ()=>{ const i=rnd(9), d=1+rnd(9);  return {v:i*10+d, from:"mm", to:"cm", ans:i+d/10}; },
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i+d/100, from:"m", to:"mm", ans:i*1000+d*10}; },
+        ()=>{ const i=rnd(9), d=1+rnd(99); return {v:i*1000+d*10, from:"mm", to:"m", ans:i+d/100}; }
+      ]
+    }
   ];
 
   /* ---------- Zustand (nur für diese Sitzung) ---------- */
   const state = {
     cats:new Set(CATS.map(c=>c.key)),
+    diff:"easy",            // "easy" | "pro"
     mode:"train",
     queue:[],
     current:null,
@@ -398,12 +462,24 @@
     $("btn-blitz").disabled = !ok;
   }
 
+  /* ---------- Schwierigkeit ---------- */
+  function setDiff(d){
+    state.diff = d;
+    $("btn-easy").classList.toggle("on", d === "easy");
+    $("btn-pro").classList.toggle("on", d === "pro");
+    $("diff-hint").innerHTML = d === "easy"
+      ? "Leicht: nur ganze Zahlen, z.&nbsp;B. 3 kg = 3000 g"
+      : "Profi: mit Kommazahlen, z.&nbsp;B. 1,25 m = 125 cm";
+  }
+  $("btn-easy").addEventListener("click", ()=>{ play("tap"); setDiff("easy"); });
+  $("btn-pro").addEventListener("click", ()=>{ play("tap"); setDiff("pro"); });
+
   /* ---------- Aufgaben ---------- */
   function makeQuestion(){
     const active = CATS.filter(c=>state.cats.has(c.key));
     for(let tries=0; tries<30; tries++){
       const cat = pick(active);
-      const q = pick(cat.variants)();
+      const q = pick(cat[state.diff])();
       const key = cat.key + q.v + q.from;
       if(key !== state.lastKey){
         state.lastKey = key;
@@ -412,7 +488,7 @@
       }
     }
     const cat = active[0];
-    const q = cat.variants[0]();
+    const q = cat[state.diff][0]();
     q.id = cat.key + q.v + q.from;
     return q;
   }
@@ -479,7 +555,7 @@
   function renderQuestion(){
     const q = state.current;
     $("question").innerHTML =
-      q.v + "&nbsp;" + q.from + ' <span class="mal">=</span> <span class="qm">?</span>&nbsp;' + q.to;
+      fmt(q.v) + "&nbsp;" + q.from + ' <span class="mal">=</span> <span class="qm">?</span>&nbsp;' + q.to;
     $("answer-num").innerHTML = state.input || "&nbsp;";
     $("answer-unit").textContent = q.to;
     $("feedback").textContent = "\u00A0";
@@ -501,9 +577,15 @@
 
   /* ---------- Eingabe ---------- */
   function pressDigit(d){
-    if(state.locked || state.input.length >= 4) return;
+    if(state.locked || state.input.length >= 5) return;
     play("tap");
     state.input += d;
+    $("answer-num").textContent = state.input;
+  }
+  function pressComma(){
+    if(state.locked || state.input.includes(",") || state.input.length >= 4) return;
+    play("tap");
+    state.input = (state.input === "" ? "0" : state.input) + ",";
     $("answer-num").textContent = state.input;
   }
   function pressDel(){
@@ -513,20 +595,22 @@
     $("answer-num").innerHTML = state.input || "&nbsp;";
   }
   function pressGo(){
-    if(state.locked || state.input === "") return;
-    check(parseInt(state.input,10));
+    if(state.locked || state.input === "" || state.input.endsWith(",")) return;
+    check(parseFloat(state.input.replace(",", ".")));
   }
 
   $("pad").addEventListener("click", e=>{
     const b = e.target.closest("button");
     if(!b) return;
     if(b.dataset.d !== undefined) pressDigit(b.dataset.d);
+    else if(b.dataset.a === "comma") pressComma();
     else if(b.dataset.a === "del") pressDel();
     else if(b.dataset.a === "go") pressGo();
   });
   document.addEventListener("keydown", e=>{
     if(!$("screen-play").classList.contains("active")) return;
     if(e.key >= "0" && e.key <= "9") pressDigit(e.key);
+    else if(e.key === "," || e.key === ".") pressComma();
     else if(e.key === "Backspace"){ e.preventDefault(); pressDel(); }
     else if(e.key === "Enter"){ e.preventDefault(); pressGo(); }
   });
@@ -538,7 +622,7 @@
     const first = !state.attempted[q.id];
     state.attempted[q.id] = true;
 
-    if(value === q.ans){
+    if(Math.abs(value - q.ans) < 0.001){
       state.correct++;
       state.streak++;
       state.bestStreak = Math.max(state.bestStreak, state.streak);
@@ -560,7 +644,7 @@
       state.wrong++;
       state.streak = 0;
       $("stage").classList.add("bad");
-      $("feedback").textContent = "Fast! " + q.v + " " + q.from + " = " + q.ans + " " + q.to;
+      $("feedback").textContent = "Fast! " + fmt(q.v) + " " + q.from + " = " + fmt(q.ans) + " " + q.to;
       $("feedback").className = "feedback bad";
       play("bad");
       updateHud();
@@ -601,7 +685,9 @@
       stats = "<b>" + firstTryCount + " von " + state.totalUnique + "</b> Aufgaben gleich beim ersten Versuch richtig<br>" +
               "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
     }else{
-      starsWon = state.correct >= 15 ? 3 : state.correct >= 9 ? 2 : 1;
+      const t3 = state.diff === "pro" ? 12 : 15;
+      const t2 = state.diff === "pro" ? 7 : 9;
+      starsWon = state.correct >= t3 ? 3 : state.correct >= t2 ? 2 : 1;
       title = starsWon === 3 ? "Blitzschnell! ⚡" : starsWon === 2 ? "Flotte Runde!" : "Geschafft!";
       stats = "<b>" + state.correct + "</b> richtige Antworten in 60 Sekunden<br>" +
               "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
