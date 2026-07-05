@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>1×1 Raketen-Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --space-1:#141838;
+    --space-2:#2a1d5e;
+    --card:#232a5e;
+    --card-2:#2f3775;
+    --line:#3d468f;
+    --star:#ffd447;
+    --ok:#4ade80;
+    --bad:#ff6b7a;
+    --cyan:#5be3ef;
+    --text:#f4f6ff;
+    --muted:#a7afdb;
+    --radius:22px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; }
+  body{
+    font-family:'Nunito', system-ui, sans-serif;
+    color:var(--text);
+    background:linear-gradient(180deg, var(--space-1) 0%, var(--space-2) 100%);
+    overflow:hidden;
+    touch-action:manipulation;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  h1,h2,.q,.pad button,.mode-btn,.big-btn,.chip{ font-family:'Fredoka','Nunito',system-ui,sans-serif; }
+
+  /* Sternenhimmel */
+  #sky{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+  #sky .dot{
+    position:absolute; background:#fff; border-radius:50%;
+    animation:twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.15} 50%{opacity:.85} }
+
+  .screen{
+    position:fixed; inset:0; z-index:1;
+    display:none; flex-direction:column; align-items:center;
+    padding:max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+    overflow-y:auto;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- Startscreen ---------- */
+  #screen-start{ justify-content:center; gap:18px; text-align:center; }
+  .logo{ font-size:clamp(2rem, 7vmin, 3.2rem); font-weight:700; margin:0; line-height:1.1; }
+  .logo .x{ color:var(--star); }
+  .tagline{ color:var(--muted); margin:0; font-size:clamp(.95rem,2.6vmin,1.15rem); }
+
+  .panel{
+    background:var(--card); border:2px solid var(--line); border-radius:var(--radius);
+    padding:16px; width:min(560px, 100%);
+  }
+  .panel h2{ margin:0 0 12px; font-size:1.15rem; font-weight:600; color:var(--cyan); letter-spacing:.02em; }
+
+  .chips{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .chip{
+    border:none; border-radius:50%; aspect-ratio:1;
+    font-size:clamp(1.2rem,4.5vmin,1.6rem); font-weight:600;
+    background:var(--card-2); color:var(--muted);
+    border:2px solid var(--line);
+    cursor:pointer; transition:transform .08s, background .15s, color .15s;
+  }
+  .chip.on{ background:var(--star); color:#3a2c00; border-color:var(--star); }
+  .chip:active{ transform:scale(.9); }
+  .chip-row-actions{ display:flex; gap:10px; margin-top:12px; justify-content:center; }
+  .mini-btn{
+    background:transparent; color:var(--muted); border:2px solid var(--line);
+    border-radius:999px; padding:6px 16px; font:inherit; font-weight:800; cursor:pointer;
+  }
+  .mini-btn:active{ transform:scale(.95); }
+
+  .modes{ display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(560px,100%); }
+  .mode-btn{
+    border:none; border-radius:var(--radius); padding:18px 10px;
+    font-size:clamp(1.1rem,3.5vmin,1.4rem); font-weight:600; cursor:pointer;
+    color:#0d2b16; background:var(--ok);
+    display:flex; flex-direction:column; gap:4px; align-items:center;
+    transition:transform .08s;
+  }
+  .mode-btn.blitz{ background:var(--cyan); color:#083035; }
+  .mode-btn small{ font-family:'Nunito'; font-weight:800; font-size:.8rem; opacity:.75; }
+  .mode-btn:active{ transform:scale(.96); }
+  .mode-btn:disabled{ opacity:.4; }
+
+  .session-stars{ color:var(--star); font-weight:800; font-size:1rem; }
+
+  /* ---------- Spielscreen ---------- */
+  #screen-play{ justify-content:space-between; gap:8px; }
+  .topbar{
+    width:min(640px,100%); display:flex; align-items:center; gap:12px;
+  }
+  .icon-btn{
+    background:var(--card); border:2px solid var(--line); color:var(--text);
+    border-radius:14px; width:46px; height:46px; font-size:1.2rem; cursor:pointer; flex:none;
+  }
+  .icon-btn:active{ transform:scale(.92); }
+
+  .track{
+    flex:1; height:18px; background:var(--card); border:2px solid var(--line);
+    border-radius:999px; position:relative;
+  }
+  .track .fill{
+    position:absolute; inset:2px auto 2px 2px; width:0%;
+    background:linear-gradient(90deg, var(--cyan), var(--ok));
+    border-radius:999px; transition:width .4s ease;
+  }
+  .track .rocket{
+    position:absolute; top:50%; left:0%;
+    transform:translate(-40%,-54%); font-size:1.7rem;
+    transition:left .4s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  }
+  .track.launching .rocket{ animation:liftoff .9s ease-in forwards; }
+  @keyframes liftoff{ to{ transform:translate(20%,-260%) rotate(-20deg); opacity:0; } }
+
+  .hud{ display:flex; gap:10px; align-items:center; flex:none; font-weight:800; }
+  .hud .stars{ color:var(--star); }
+  .hud .streak{ color:var(--bad); min-width:2.6em; text-align:right; }
+  .hud .clock{ color:var(--cyan); min-width:2.4em; text-align:right; }
+
+  .stage{
+    flex:1; width:min(640px,100%); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px; position:relative; min-height:0;
+  }
+  .q{
+    font-size:clamp(2.6rem, 13vmin, 5.5rem); font-weight:600; margin:0;
+    letter-spacing:.02em;
+  }
+  .q .mal{ color:var(--star); }
+  .answer{
+    min-width:3.2em; text-align:center;
+    font-family:'Fredoka'; font-size:clamp(2rem, 9vmin, 3.6rem); font-weight:600;
+    background:var(--card); border:3px dashed var(--line); border-radius:18px;
+    padding:2px 18px; min-height:1.5em; line-height:1.5em;
+  }
+  .stage.good .answer{ border-color:var(--ok); border-style:solid; color:var(--ok); }
+  .stage.bad .answer{ border-color:var(--bad); border-style:solid; color:var(--bad); animation:shake .4s; }
+  @keyframes shake{ 25%{transform:translateX(-8px)} 50%{transform:translateX(8px)} 75%{transform:translateX(-5px)} }
+  .feedback{
+    height:1.6em; margin:0; font-weight:800;
+    font-size:clamp(1rem,3.4vmin,1.3rem);
+  }
+  .feedback.good{ color:var(--ok); }
+  .feedback.bad{ color:var(--bad); }
+
+  .pad{
+    width:min(430px,100%); display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    padding-bottom:4px;
+  }
+  .pad button{
+    border:none; border-radius:18px; min-height:clamp(54px, 9.5vh, 76px);
+    font-size:clamp(1.5rem, 5vmin, 2.1rem); font-weight:600;
+    background:var(--card-2); color:var(--text); cursor:pointer;
+    border-bottom:4px solid rgba(0,0,0,.35);
+    transition:transform .06s;
+  }
+  .pad button:active{ transform:scale(.94); }
+  .pad .del{ background:var(--card); color:var(--muted); }
+  .pad .go{ background:var(--ok); color:#0d2b16; }
+
+  /* Konfetti-Sterne */
+  .spark{
+    position:absolute; left:50%; top:40%; font-size:1.4rem; pointer-events:none;
+    animation:fly .9s ease-out forwards;
+  }
+  @keyframes fly{
+    to{ transform:translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity:0; }
+  }
+
+  /* ---------- Ergebnisscreen ---------- */
+  #screen-end{ justify-content:center; gap:16px; text-align:center; }
+  .end-stars{ font-size:clamp(3rem,12vmin,5rem); letter-spacing:.1em; }
+  .end-stars span{ display:inline-block; opacity:.25; transform:scale(.6); }
+  .end-stars span.won{ opacity:1; color:var(--star); animation:pop .5s ease backwards; }
+  .end-stars span:nth-child(2).won{ animation-delay:.25s }
+  .end-stars span:nth-child(3).won{ animation-delay:.5s }
+  @keyframes pop{ from{ transform:scale(0) rotate(-30deg);} 70%{ transform:scale(1.25);} to{ transform:scale(1);} }
+  .end-title{ font-size:clamp(1.6rem,6vmin,2.4rem); font-weight:700; margin:0; }
+  .end-stats{ color:var(--muted); font-weight:800; margin:0; line-height:1.8; }
+  .end-stats b{ color:var(--text); }
+  .big-btn{
+    border:none; border-radius:var(--radius); padding:16px 34px;
+    font-size:1.3rem; font-weight:600; cursor:pointer;
+    background:var(--ok); color:#0d2b16; border-bottom:4px solid rgba(0,0,0,.3);
+  }
+  .big-btn.alt{ background:var(--card-2); color:var(--text); }
+  .big-btn:active{ transform:scale(.96); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+
+<!-- ===================== START ===================== -->
+<section id="screen-start" class="screen active">
+  <h1 class="logo">🚀 1<span class="x">×</span>1 Raketen-Trainer</h1>
+  <p class="tagline">Löse Aufgaben, sammle Sterne und bring die Rakete ins Ziel!</p>
+
+  <div class="panel">
+    <h2>Welche Reihen willst du üben?</h2>
+    <div class="chips" id="chips"></div>
+    <div class="chip-row-actions">
+      <button class="mini-btn" id="btn-all">Alle</button>
+      <button class="mini-btn" id="btn-none">Keine</button>
+    </div>
+  </div>
+
+  <div class="modes">
+    <button class="mode-btn" id="btn-train">🧑‍🚀 Training<small>12 Aufgaben, ohne Zeit</small></button>
+    <button class="mode-btn blitz" id="btn-blitz">⚡ Blitzrunde<small>60 Sekunden</small></button>
+  </div>
+
+  <p class="session-stars" id="session-stars">⭐ 0 Sterne gesammelt</p>
+</section>
+
+<!-- ===================== SPIEL ===================== -->
+<section id="screen-play" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" id="btn-home" title="Zurück zum Start">🏠</button>
+    <div class="track" id="track">
+      <div class="fill" id="track-fill"></div>
+      <div class="rocket" id="rocket">🚀</div>
+    </div>
+    <div class="hud">
+      <span class="clock" id="hud-clock" hidden>60s</span>
+      <span class="stars" id="hud-stars">⭐ 0</span>
+      <span class="streak" id="hud-streak"></span>
+    </div>
+    <button class="icon-btn" id="btn-sound" title="Ton an/aus">🔊</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <p class="q" id="question">7 <span class="mal">×</span> 8</p>
+    <div class="answer" id="answer">&nbsp;</div>
+    <p class="feedback" id="feedback">&nbsp;</p>
+  </div>
+
+  <div class="pad" id="pad">
+    <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+    <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+    <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+    <button class="del" data-a="del">⌫</button><button data-d="0">0</button><button class="go" data-a="go">✔</button>
+  </div>
+</section>
+
+<!-- ===================== ERGEBNIS ===================== -->
+<section id="screen-end" class="screen">
+  <div class="end-stars" id="end-stars"><span>★</span><span>★</span><span>★</span></div>
+  <h2 class="end-title" id="end-title">Super gemacht!</h2>
+  <p class="end-stats" id="end-stats"></p>
+  <button class="big-btn" id="btn-again">Nochmal spielen</button>
+  <button class="big-btn alt" id="btn-menu">Zurück zum Start</button>
+</section>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Hilfen ---------- */
+  const $ = id => document.getElementById(id);
+  const rnd = n => Math.floor(Math.random()*n);
+  const PRAISE = ["Super!","Klasse!","Stark!","Genau!","Toll gemacht!","Weiter so!","Raketenstark!","Perfekt!"];
+
+  /* ---------- Zustand (nur für diese Sitzung) ---------- */
+  const state = {
+    rows:new Set([1,2,3,4,5,6,7,8,9,10]),
+    mode:"train",           // "train" | "blitz"
+    queue:[],               // Aufgaben-Warteschlange (Training)
+    current:null,
+    solvedIds:new Set(),
+    firstTry:{},            // id -> true/false (beim ersten Versuch richtig?)
+    attempted:{},           // id -> schon einmal versucht?
+    totalUnique:12,
+    input:"",
+    locked:false,
+    stars:0,                // Sterne insgesamt (Sitzung)
+    streak:0, bestStreak:0,
+    correct:0, wrong:0,
+    blitzTime:60, blitzTimer:null,
+    sound:true,
+    lastKey:""
+  };
+
+  /* ---------- Sternenhimmel ---------- */
+  (function sky(){
+    const sky = $("sky");
+    for(let i=0;i<60;i++){
+      const d = document.createElement("span");
+      d.className = "dot";
+      const s = 1 + Math.random()*2.4;
+      d.style.width = d.style.height = s+"px";
+      d.style.left = Math.random()*100+"%";
+      d.style.top = Math.random()*100+"%";
+      d.style.animationDelay = (Math.random()*3)+"s";
+      sky.appendChild(d);
+    }
+  })();
+
+  /* ---------- Töne (WebAudio, keine Dateien nötig) ---------- */
+  let audioCtx = null;
+  function tone(freq, start, dur, type, vol){
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || .18, audioCtx.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + start + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(audioCtx.currentTime + start); o.stop(audioCtx.currentTime + start + dur + .05);
+  }
+  function play(kind){
+    if(!state.sound) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      if(kind==="ok"){ tone(660,0,.12); tone(880,.12,.18); }
+      else if(kind==="bad"){ tone(200,0,.25,"square",.1); }
+      else if(kind==="tap"){ tone(500,0,.05,"sine",.06); }
+      else if(kind==="win"){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.15,.25)); }
+    }catch(e){ /* Ton ist optional */ }
+  }
+
+  /* ---------- Screens ---------- */
+  function show(name){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $("screen-"+name).classList.add("active");
+  }
+
+  /* ---------- Startscreen: Reihen-Auswahl ---------- */
+  const chipsEl = $("chips");
+  for(let n=1;n<=10;n++){
+    const b = document.createElement("button");
+    b.className = "chip on"; b.textContent = n; b.dataset.n = n;
+    b.addEventListener("click", ()=>{
+      play("tap");
+      if(state.rows.has(n)){ state.rows.delete(n); b.classList.remove("on"); }
+      else{ state.rows.add(n); b.classList.add("on"); }
+      updateStartButtons();
+    });
+    chipsEl.appendChild(b);
+  }
+  function setAll(on){
+    state.rows.clear();
+    document.querySelectorAll(".chip").forEach(c=>{
+      c.classList.toggle("on", on);
+      if(on) state.rows.add(+c.dataset.n);
+    });
+    updateStartButtons();
+  }
+  $("btn-all").addEventListener("click", ()=>{ play("tap"); setAll(true); });
+  $("btn-none").addEventListener("click", ()=>{ play("tap"); setAll(false); });
+  function updateStartButtons(){
+    const ok = state.rows.size > 0;
+    $("btn-train").disabled = !ok;
+    $("btn-blitz").disabled = !ok;
+  }
+
+  /* ---------- Aufgaben ---------- */
+  function makeQuestion(){
+    const rows = [...state.rows];
+    for(let tries=0; tries<25; tries++){
+      const r = rows[rnd(rows.length)];
+      const f = 1 + rnd(10);
+      const flip = Math.random() < .5;
+      const a = flip ? f : r, b = flip ? r : f;
+      const key = a+"x"+b;
+      if(key !== state.lastKey){
+        state.lastKey = key;
+        return { a, b, ans:a*b, id:Math.min(a,b)+"x"+Math.max(a,b) };
+      }
+    }
+    const r = rows[0], f = 1 + rnd(10);
+    return { a:r, b:f, ans:r*f, id:Math.min(r,f)+"x"+Math.max(r,f) };
+  }
+  function buildTrainQueue(){
+    state.queue = [];
+    const used = new Set();
+    let guard = 0;
+    while(state.queue.length < state.totalUnique){
+      const q = makeQuestion();
+      guard++;
+      if(used.has(q.id) && guard < 80) continue; // möglichst keine doppelten Aufgaben
+      used.add(q.id);
+      state.queue.push(q);
+    }
+  }
+
+  /* ---------- Runde starten ---------- */
+  function startRound(mode){
+    state.mode = mode;
+    state.solvedIds.clear(); state.firstTry = {}; state.attempted = {};
+    state.correct = 0; state.wrong = 0; state.streak = 0; state.bestStreak = 0;
+    state.input = ""; state.locked = false; state.lastKey = "";
+    $("track").classList.remove("launching");
+    $("rocket").textContent = "🚀";
+    if(mode === "train"){
+      buildTrainQueue();
+      $("hud-clock").hidden = true;
+      setProgress(0);
+    }else{
+      state.blitzTime = 60;
+      $("hud-clock").hidden = false;
+      $("hud-clock").textContent = "60s";
+      setProgress(1);
+      state.blitzTimer = setInterval(tick, 1000);
+    }
+    updateHud();
+    show("play");
+    nextQuestion();
+  }
+  function tick(){
+    state.blitzTime--;
+    $("hud-clock").textContent = state.blitzTime + "s";
+    setProgress(state.blitzTime / 60);
+    if(state.blitzTime <= 0){
+      clearInterval(state.blitzTimer); state.blitzTimer = null;
+      finishRound();
+    }
+  }
+  function stopTimer(){
+    if(state.blitzTimer){ clearInterval(state.blitzTimer); state.blitzTimer = null; }
+  }
+
+  /* ---------- Anzeige ---------- */
+  function setProgress(p){
+    const pct = Math.max(0, Math.min(1, p)) * 100;
+    $("track-fill").style.width = pct + "%";
+    $("rocket").style.left = pct + "%";
+  }
+  function updateHud(){
+    $("hud-stars").textContent = "⭐ " + state.stars;
+    $("hud-streak").textContent = state.streak >= 3 ? "🔥 " + state.streak : "";
+    $("session-stars").textContent = "⭐ " + state.stars + " Sterne gesammelt";
+  }
+  function renderQuestion(){
+    const q = state.current;
+    $("question").innerHTML = q.a + ' <span class="mal">×</span> ' + q.b;
+    $("answer").innerHTML = state.input || "&nbsp;";
+    $("feedback").textContent = "\u00A0";
+    $("feedback").className = "feedback";
+    $("stage").classList.remove("good","bad");
+  }
+
+  function nextQuestion(){
+    state.input = "";
+    state.locked = false;
+    if(state.mode === "train"){
+      if(state.solvedIds.size >= state.totalUnique){ finishRound(); return; }
+      state.current = state.queue.shift();
+    }else{
+      state.current = makeQuestion();
+    }
+    renderQuestion();
+  }
+
+  /* ---------- Eingabe ---------- */
+  function pressDigit(d){
+    if(state.locked || state.input.length >= 3) return;
+    play("tap");
+    state.input += d;
+    $("answer").textContent = state.input;
+  }
+  function pressDel(){
+    if(state.locked) return;
+    play("tap");
+    state.input = state.input.slice(0,-1);
+    $("answer").innerHTML = state.input || "&nbsp;";
+  }
+  function pressGo(){
+    if(state.locked || state.input === "") return;
+    check(parseInt(state.input,10));
+  }
+
+  $("pad").addEventListener("click", e=>{
+    const b = e.target.closest("button");
+    if(!b) return;
+    if(b.dataset.d !== undefined) pressDigit(b.dataset.d);
+    else if(b.dataset.a === "del") pressDel();
+    else if(b.dataset.a === "go") pressGo();
+  });
+  document.addEventListener("keydown", e=>{
+    if(!$("screen-play").classList.contains("active")) return;
+    if(e.key >= "0" && e.key <= "9") pressDigit(e.key);
+    else if(e.key === "Backspace"){ e.preventDefault(); pressDel(); }
+    else if(e.key === "Enter"){ e.preventDefault(); pressGo(); }
+  });
+
+  /* ---------- Prüfen ---------- */
+  function check(value){
+    const q = state.current;
+    state.locked = true;
+    const first = !state.attempted[q.id];
+    state.attempted[q.id] = true;
+
+    if(value === q.ans){
+      state.correct++;
+      state.streak++;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      state.stars++;
+      if(first) state.firstTry[q.id] = true;
+      if(state.mode === "train"){
+        state.solvedIds.add(q.id);
+        setProgress(state.solvedIds.size / state.totalUnique);
+      }
+      $("stage").classList.add("good");
+      const msg = PRAISE[rnd(PRAISE.length)];
+      $("feedback").textContent = state.streak >= 5 ? msg + " 🔥 " + state.streak + " in Folge!" : msg;
+      $("feedback").className = "feedback good";
+      play("ok");
+      confetti();
+      updateHud();
+      setTimeout(nextQuestion, 750);
+    }else{
+      state.wrong++;
+      state.streak = 0;
+      $("stage").classList.add("bad");
+      $("feedback").textContent = "Fast! " + q.a + " × " + q.b + " = " + q.ans;
+      $("feedback").className = "feedback bad";
+      play("bad");
+      updateHud();
+      if(state.mode === "train"){
+        // Aufgabe kommt etwas später noch einmal
+        const again = { a:q.a, b:q.b, ans:q.ans, id:q.id };
+        state.queue.splice(Math.min(2, state.queue.length), 0, again);
+      }
+      setTimeout(nextQuestion, 1700);
+    }
+  }
+
+  /* ---------- Konfetti ---------- */
+  function confetti(){
+    const stage = $("stage");
+    const n = state.streak > 0 && state.streak % 5 === 0 ? 16 : 7;
+    for(let i=0;i<n;i++){
+      const s = document.createElement("span");
+      s.className = "spark";
+      s.textContent = ["⭐","✨","🌟"][rnd(3)];
+      s.style.setProperty("--dx", (Math.random()*260-130)+"px");
+      s.style.setProperty("--dy", (-40 - Math.random()*180)+"px");
+      s.style.setProperty("--rot", (Math.random()*240-120)+"deg");
+      stage.appendChild(s);
+      setTimeout(()=>s.remove(), 950);
+    }
+  }
+
+  /* ---------- Runde beenden ---------- */
+  function finishRound(){
+    stopTimer();
+    let starsWon, title, stats;
+    if(state.mode === "train"){
+      $("track").classList.add("launching");
+      const firstTryCount = Object.keys(state.firstTry).length;
+      const quote = firstTryCount / state.totalUnique;
+      starsWon = quote >= .9 ? 3 : quote >= .65 ? 2 : 1;
+      title = starsWon === 3 ? "Rakete gestartet! 🚀" : starsWon === 2 ? "Stark geflogen!" : "Geschafft!";
+      stats = "<b>" + firstTryCount + " von " + state.totalUnique + "</b> Aufgaben gleich beim ersten Versuch richtig<br>" +
+              "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
+    }else{
+      starsWon = state.correct >= 20 ? 3 : state.correct >= 12 ? 2 : 1;
+      title = starsWon === 3 ? "Blitzschnell! ⚡" : starsWon === 2 ? "Flotte Runde!" : "Geschafft!";
+      stats = "<b>" + state.correct + "</b> richtige Antworten in 60 Sekunden<br>" +
+              "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
+    }
+    const spans = $("end-stars").querySelectorAll("span");
+    spans.forEach((s,i)=>s.classList.toggle("won", i < starsWon));
+    $("end-title").textContent = title;
+    $("end-stats").innerHTML = stats;
+    play("win");
+    setTimeout(()=>show("end"), state.mode === "train" ? 900 : 200);
+  }
+
+  /* ---------- Navigation ---------- */
+  $("btn-train").addEventListener("click", ()=>startRound("train"));
+  $("btn-blitz").addEventListener("click", ()=>startRound("blitz"));
+  $("btn-home").addEventListener("click", ()=>{ stopTimer(); updateHud(); show("start"); });
+  $("btn-menu").addEventListener("click", ()=>{ updateHud(); show("start"); });
+  $("btn-again").addEventListener("click", ()=>startRound(state.mode));
+  $("btn-sound").addEventListener("click", ()=>{
+    state.sound = !state.sound;
+    $("btn-sound").textContent = state.sound ? "🔊" : "🔇";
+    play("tap");
+  });
+})();
+</script>
+</body>
+</html>
