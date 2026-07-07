@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Plus-Raketen-Trainer bis 1000</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --space-1:#141838;
+    --space-2:#2a1d5e;
+    --card:#232a5e;
+    --card-2:#2f3775;
+    --line:#3d468f;
+    --star:#ffd447;
+    --ok:#4ade80;
+    --bad:#ff6b7a;
+    --cyan:#5be3ef;
+    --text:#f4f6ff;
+    --muted:#a7afdb;
+    --radius:22px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; }
+  body{
+    font-family:'Nunito', system-ui, sans-serif;
+    color:var(--text);
+    background:linear-gradient(180deg, var(--space-1) 0%, var(--space-2) 100%);
+    overflow:hidden;
+    touch-action:manipulation;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  h1,h2,.q,.pad button,.mode-btn,.big-btn,.chip,.diff-btn{ font-family:'Fredoka','Nunito',system-ui,sans-serif; }
+
+  /* Sternenhimmel */
+  #sky{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+  #sky .dot{
+    position:absolute; background:#fff; border-radius:50%;
+    animation:twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.15} 50%{opacity:.85} }
+
+  .screen{
+    position:fixed; inset:0; z-index:1;
+    display:none; flex-direction:column; align-items:center;
+    padding:max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+    overflow-y:auto;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- Startscreen ---------- */
+  #screen-start{ justify-content:center; gap:16px; text-align:center; }
+  .logo{ font-size:clamp(1.8rem, 6.5vmin, 3rem); font-weight:700; margin:0; line-height:1.1; }
+  .logo .x{ color:var(--star); }
+  .tagline{ color:var(--muted); margin:0; font-size:clamp(.95rem,2.6vmin,1.15rem); }
+
+  .panel{
+    background:var(--card); border:2px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; width:min(560px, 100%);
+  }
+  .panel h2{ margin:0 0 12px; font-size:1.1rem; font-weight:600; color:var(--cyan); letter-spacing:.02em; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .chip{
+    border-radius:999px; padding:12px 18px;
+    font-size:clamp(1rem,3.4vmin,1.2rem); font-weight:600;
+    background:var(--card-2); color:var(--muted);
+    border:2px solid var(--line);
+    cursor:pointer; transition:transform .08s, background .15s, color .15s;
+  }
+  .chip.on{ background:var(--star); color:#3a2c00; border-color:var(--star); }
+  .chip:active{ transform:scale(.92); }
+  .chip-row-actions{ display:flex; gap:10px; margin-top:12px; justify-content:center; }
+  .mini-btn{
+    background:transparent; color:var(--muted); border:2px solid var(--line);
+    border-radius:999px; padding:6px 16px; font:inherit; font-weight:800; cursor:pointer;
+  }
+  .mini-btn:active{ transform:scale(.95); }
+
+  .diff{ display:flex; gap:10px; justify-content:center; }
+  .diff-btn{
+    border-radius:999px; padding:12px 20px;
+    font-size:clamp(1rem,3.4vmin,1.2rem); font-weight:600;
+    background:var(--card-2); color:var(--muted);
+    border:2px solid var(--line); cursor:pointer;
+    transition:transform .08s, background .15s, color .15s;
+  }
+  .diff-btn.on{ background:var(--cyan); color:#083035; border-color:var(--cyan); }
+  .diff-btn:active{ transform:scale(.94); }
+  .diff-hint{ margin:10px 0 0; color:var(--muted); font-weight:800; font-size:.85rem; }
+
+  .modes{ display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(560px,100%); }
+  .mode-btn{
+    border:none; border-radius:var(--radius); padding:16px 10px;
+    font-size:clamp(1.1rem,3.5vmin,1.4rem); font-weight:600; cursor:pointer;
+    color:#0d2b16; background:var(--ok);
+    display:flex; flex-direction:column; gap:4px; align-items:center;
+    transition:transform .08s;
+  }
+  .mode-btn.blitz{ background:var(--cyan); color:#083035; }
+  .mode-btn small{ font-family:'Nunito'; font-weight:800; font-size:.8rem; opacity:.75; }
+  .mode-btn:active{ transform:scale(.96); }
+  .mode-btn:disabled{ opacity:.4; }
+
+  .session-stars{ color:var(--star); font-weight:800; font-size:1rem; }
+
+  /* ---------- Spielscreen ---------- */
+  #screen-play{ justify-content:space-between; gap:8px; }
+  .topbar{
+    width:min(640px,100%); display:flex; align-items:center; gap:12px;
+  }
+  .icon-btn{
+    background:var(--card); border:2px solid var(--line); color:var(--text);
+    border-radius:14px; width:46px; height:46px; font-size:1.2rem; cursor:pointer; flex:none;
+  }
+  .icon-btn:active{ transform:scale(.92); }
+
+  .track{
+    flex:1; height:18px; background:var(--card); border:2px solid var(--line);
+    border-radius:999px; position:relative;
+  }
+  .track .fill{
+    position:absolute; inset:2px auto 2px 2px; width:0%;
+    background:linear-gradient(90deg, var(--cyan), var(--ok));
+    border-radius:999px; transition:width .4s ease;
+  }
+  .track .rocket{
+    position:absolute; top:50%; left:0%;
+    transform:translate(-40%,-54%); font-size:1.7rem;
+    transition:left .4s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  }
+  .track.launching .rocket{ animation:liftoff .9s ease-in forwards; }
+  @keyframes liftoff{ to{ transform:translate(20%,-260%) rotate(-20deg); opacity:0; } }
+
+  .hud{ display:flex; gap:10px; align-items:center; flex:none; font-weight:800; }
+  .hud .stars{ color:var(--star); }
+  .hud .streak{ color:var(--bad); min-width:2.6em; text-align:right; }
+  .hud .clock{ color:var(--cyan); min-width:2.4em; text-align:right; }
+
+  .stage{
+    flex:1; width:min(640px,100%); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px; position:relative; min-height:0;
+  }
+  .task-card{
+    display:flex; align-items:baseline; gap:12px;
+    background:var(--card); border:2px solid var(--star); border-radius:14px;
+    padding:8px 18px;
+  }
+  .task-label{
+    color:var(--muted); font-weight:800; font-size:.8rem;
+    text-transform:uppercase; letter-spacing:.08em; font-family:'Nunito';
+  }
+  .task-term{
+    font-family:'Fredoka'; font-weight:600; color:var(--star);
+    font-size:clamp(1.3rem, 4.8vmin, 1.9rem); white-space:nowrap;
+  }
+  .steps-rail{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .step-chip{
+    border-radius:999px; padding:6px 14px;
+    font-family:'Fredoka'; font-weight:600;
+    font-size:clamp(.95rem, 3vmin, 1.15rem);
+    background:var(--card-2); color:var(--muted); border:2px solid var(--line);
+    white-space:nowrap;
+  }
+  .step-chip.done{ background:rgba(74,222,128,.12); border-color:var(--ok); color:var(--ok); }
+  .step-chip.now{ border-color:var(--cyan); color:var(--cyan); animation:chipPulse 1.3s ease-in-out infinite; }
+  @keyframes chipPulse{ 50%{ transform:scale(1.07); } }
+  .q{
+    font-size:clamp(2.1rem, 10.5vmin, 4.6rem); font-weight:600; margin:0;
+    letter-spacing:.02em; white-space:nowrap;
+  }
+  .q .mal{ color:var(--star); }
+  .answer{
+    min-width:3.2em; text-align:center;
+    font-family:'Fredoka'; font-size:clamp(2rem, 9vmin, 3.6rem); font-weight:600;
+    background:var(--card); border:3px dashed var(--line); border-radius:18px;
+    padding:2px 18px; min-height:1.5em; line-height:1.5em;
+  }
+  .stage.good .answer{ border-color:var(--ok); border-style:solid; color:var(--ok); }
+  .stage.bad .answer{ border-color:var(--bad); border-style:solid; color:var(--bad); animation:shake .4s; }
+  @keyframes shake{ 25%{transform:translateX(-8px)} 50%{transform:translateX(8px)} 75%{transform:translateX(-5px)} }
+  .feedback{
+    height:1.6em; margin:0; font-weight:800;
+    font-size:clamp(1rem,3.4vmin,1.3rem);
+  }
+  .feedback.good{ color:var(--ok); }
+  .feedback.bad{ color:var(--bad); }
+
+  .pad{
+    width:min(430px,100%); display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    padding-bottom:4px;
+  }
+  .pad button{
+    border:none; border-radius:18px; min-height:clamp(52px, 9vh, 74px);
+    font-size:clamp(1.5rem, 5vmin, 2.1rem); font-weight:600;
+    background:var(--card-2); color:var(--text); cursor:pointer;
+    border-bottom:4px solid rgba(0,0,0,.35);
+    transition:transform .06s;
+  }
+  .pad button:active{ transform:scale(.94); }
+  .pad .del{ background:var(--card); color:var(--muted); }
+  .pad .go{ background:var(--ok); color:#0d2b16; }
+
+  /* Konfetti-Sterne */
+  .spark{
+    position:absolute; left:50%; top:40%; font-size:1.4rem; pointer-events:none;
+    animation:fly .9s ease-out forwards;
+  }
+  @keyframes fly{
+    to{ transform:translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity:0; }
+  }
+
+  /* ---------- Ergebnisscreen ---------- */
+  #screen-end{ justify-content:center; gap:16px; text-align:center; }
+  .end-stars{ font-size:clamp(3rem,12vmin,5rem); letter-spacing:.1em; }
+  .end-stars span{ display:inline-block; opacity:.25; transform:scale(.6); }
+  .end-stars span.won{ opacity:1; color:var(--star); animation:pop .5s ease backwards; }
+  .end-stars span:nth-child(2).won{ animation-delay:.25s }
+  .end-stars span:nth-child(3).won{ animation-delay:.5s }
+  @keyframes pop{ from{ transform:scale(0) rotate(-30deg);} 70%{ transform:scale(1.25);} to{ transform:scale(1);} }
+  .end-title{ font-size:clamp(1.6rem,6vmin,2.4rem); font-weight:700; margin:0; }
+  .end-stats{ color:var(--muted); font-weight:800; margin:0; line-height:1.8; }
+  .end-stats b{ color:var(--text); }
+  .big-btn{
+    border:none; border-radius:var(--radius); padding:16px 34px;
+    font-size:1.3rem; font-weight:600; cursor:pointer;
+    background:var(--ok); color:#0d2b16; border-bottom:4px solid rgba(0,0,0,.3);
+  }
+  .big-btn.alt{ background:var(--card-2); color:var(--text); }
+  .big-btn:active{ transform:scale(.96); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+
+<!-- ===================== START ===================== -->
+<section id="screen-start" class="screen active">
+  <h1 class="logo">🚀 Plus<span class="x">-</span>Raketen-Trainer</h1>
+  <p class="tagline">Rechne plus bis 1000, sammle Sterne und bring die Rakete ins Ziel!</p>
+
+  <div class="panel">
+    <h2>Was willst du üben?</h2>
+    <div class="chips" id="chips"></div>
+    <div class="chip-row-actions">
+      <button class="mini-btn" id="btn-all">Alle</button>
+      <button class="mini-btn" id="btn-none">Keine</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Wie willst du rechnen?</h2>
+    <div class="diff">
+      <button class="diff-btn on" id="btn-steps">🪜 In Schritten</button>
+      <button class="diff-btn" id="btn-result">🎯 Nur Ergebnis</button>
+    </div>
+    <p class="diff-hint" id="diff-hint">In Schritten: erst Hunderter, dann Zehner, dann Einer dazuzählen – wie im Heft</p>
+  </div>
+
+  <div class="modes">
+    <button class="mode-btn" id="btn-train">🧑‍🚀 Training<small>12 Aufgaben, ohne Zeit</small></button>
+    <button class="mode-btn blitz" id="btn-blitz">⚡ Blitzrunde<small>60 Sekunden</small></button>
+  </div>
+
+  <p class="session-stars" id="session-stars">⭐ 0 Sterne gesammelt</p>
+</section>
+
+<!-- ===================== SPIEL ===================== -->
+<section id="screen-play" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" id="btn-home" title="Zurück zum Start">🏠</button>
+    <div class="track" id="track">
+      <div class="fill" id="track-fill"></div>
+      <div class="rocket" id="rocket">🚀</div>
+    </div>
+    <div class="hud">
+      <span class="clock" id="hud-clock" hidden>60s</span>
+      <span class="stars" id="hud-stars">⭐ 0</span>
+      <span class="streak" id="hud-streak"></span>
+    </div>
+    <button class="icon-btn" id="btn-sound" title="Ton an/aus">🔊</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="task-card" id="task-card" hidden>
+      <span class="task-label">Aufgabe</span>
+      <span class="task-term" id="task-term">245 + 382</span>
+    </div>
+    <div class="steps-rail" id="steps-rail" hidden></div>
+    <p class="q" id="question">245 <span class="mal">+</span> 300</p>
+    <div class="answer" id="answer">&nbsp;</div>
+    <p class="feedback" id="feedback">&nbsp;</p>
+  </div>
+
+  <div class="pad" id="pad">
+    <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+    <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+    <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+    <button class="del" data-a="del">⌫</button><button data-d="0">0</button><button class="go" data-a="go">✔</button>
+  </div>
+</section>
+
+<!-- ===================== ERGEBNIS ===================== -->
+<section id="screen-end" class="screen">
+  <div class="end-stars" id="end-stars"><span>★</span><span>★</span><span>★</span></div>
+  <h2 class="end-title" id="end-title">Super gemacht!</h2>
+  <p class="end-stats" id="end-stats"></p>
+  <button class="big-btn" id="btn-again">Nochmal spielen</button>
+  <button class="big-btn alt" id="btn-menu">Zurück zum Start</button>
+</section>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Hilfen ---------- */
+  const $ = id => document.getElementById(id);
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const PRAISE = ["Super!","Klasse!","Stark!","Genau!","Toll gemacht!","Weiter so!","Raketenstark!","Perfekt!"];
+  const PLUS = "+";
+
+  /* ---------- Aufgabentypen (Ende Klasse 3: HZE + HZE im Zahlenraum bis 1000,
+       zweiter Summand immer mit Hundertern, Zehnern und Einern → 3 Rechenschritte) ---------- */
+  const CATS = [
+    { key:"ohne", label:"➕ Ohne Übergang", variants:[
+        /* alle Stellen ohne Übergang, z. B. 243 + 425 */
+        ()=>{ const u1=1+rnd(8), u2=1+rnd(9-u1), t1=1+rnd(8), t2=1+rnd(9-t1), h1=1+rnd(8), h2=1+rnd(9-h1);
+              return mk("ohne",h1*100+t1*10+u1,h2*100+t2*10+u2); }
+    ]},
+    { key:"mit", label:"🔥 Mit Übergang", variants:[
+        /* Einer-Übergang (Zehner frei, auch doppelter Übergang), z. B. 245 + 382, 267 + 158 */
+        ()=>{ const u1=1+rnd(9), u2=(10-u1)+rnd(u1), t1=rnd(10), t2=1+rnd(9), h1=1+rnd(7), h2=1+rnd(8-h1);
+              return mk("mit",h1*100+t1*10+u1,h2*100+t2*10+u2); },
+        /* Zehner-Übergang, z. B. 254 + 371 */
+        ()=>{ const t1=1+rnd(9), t2=(10-t1)+rnd(t1), u1=1+rnd(8), u2=1+rnd(9-u1), h1=1+rnd(7), h2=1+rnd(8-h1);
+              return mk("mit",h1*100+t1*10+u1,h2*100+t2*10+u2); }
+    ]}
+  ];
+  /* Aufgabe bauen – der zweite Summand wird zerlegt, daher kein Tausch */
+  function mk(cat,a,b){
+    return { a, b, ans:a+b, id:cat + a + "+" + b };
+  }
+
+  /* Halbschriftliche Schritte: erst Hunderter, dann Zehner, dann Einer dazuzählen */
+  function deriveSteps(a,b){
+    const h = Math.floor(b/100), z = Math.floor((b%100)/10), e = b%10;
+    const comps = [];
+    if(h) comps.push(h*100);
+    if(z) comps.push(z*10);
+    if(e) comps.push(e);
+    let parts;
+    if(comps.length >= 2){
+      parts = []; let m = a;
+      for(const c of comps){ parts.push([m, c]); m += c; }
+    }else{
+      parts = [[a, b]];
+    }
+    return parts.map(p => ({ m:p[0], s:p[1], ans:p[0]+p[1] }));
+  }
+  function prepare(q){
+    q.steps = state.stepMode === "steps"
+      ? deriveSteps(q.a, q.b)
+      : [{ m:q.a, s:q.b, ans:q.ans }];
+    q.stepIdx = 0;
+  }
+
+  /* ---------- Zustand (nur für diese Sitzung) ---------- */
+  const state = {
+    cats:new Set(CATS.map(c=>c.key)),
+    stepMode:"steps",       // "steps" | "result"
+    mode:"train",
+    queue:[],
+    current:null,
+    solvedIds:new Set(),
+    firstTry:{},
+    attempted:{},
+    totalUnique:12,
+    input:"",
+    locked:false,
+    stars:0,
+    streak:0, bestStreak:0,
+    correct:0, wrong:0,
+    blitzTime:60, blitzTimer:null,
+    sound:true,
+    lastKey:""
+  };
+
+  /* ---------- Sternenhimmel ---------- */
+  (function sky(){
+    const sky = $("sky");
+    for(let i=0;i<60;i++){
+      const d = document.createElement("span");
+      d.className = "dot";
+      const s = 1 + Math.random()*2.4;
+      d.style.width = d.style.height = s+"px";
+      d.style.left = Math.random()*100+"%";
+      d.style.top = Math.random()*100+"%";
+      d.style.animationDelay = (Math.random()*3)+"s";
+      sky.appendChild(d);
+    }
+  })();
+
+  /* ---------- Töne ---------- */
+  let audioCtx = null;
+  function tone(freq, start, dur, type, vol){
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || .18, audioCtx.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + start + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(audioCtx.currentTime + start); o.stop(audioCtx.currentTime + start + dur + .05);
+  }
+  function play(kind){
+    if(!state.sound) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      if(kind==="ok"){ tone(660,0,.12); tone(880,.12,.18); }
+      else if(kind==="step"){ tone(660,0,.14); }
+      else if(kind==="bad"){ tone(200,0,.25,"square",.1); }
+      else if(kind==="tap"){ tone(500,0,.05,"sine",.06); }
+      else if(kind==="win"){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.15,.25)); }
+    }catch(e){ /* Ton ist optional */ }
+  }
+
+  /* ---------- Screens ---------- */
+  function show(name){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $("screen-"+name).classList.add("active");
+  }
+
+  /* ---------- Startscreen: Aufgabentypen ---------- */
+  const chipsEl = $("chips");
+  CATS.forEach(cat=>{
+    const b = document.createElement("button");
+    b.className = "chip on"; b.textContent = cat.label; b.dataset.key = cat.key;
+    b.addEventListener("click", ()=>{
+      play("tap");
+      if(state.cats.has(cat.key)){ state.cats.delete(cat.key); b.classList.remove("on"); }
+      else{ state.cats.add(cat.key); b.classList.add("on"); }
+      updateStartButtons();
+    });
+    chipsEl.appendChild(b);
+  });
+  function setAll(on){
+    state.cats.clear();
+    document.querySelectorAll(".chip").forEach(c=>{
+      c.classList.toggle("on", on);
+      if(on) state.cats.add(c.dataset.key);
+    });
+    updateStartButtons();
+  }
+  $("btn-all").addEventListener("click", ()=>{ play("tap"); setAll(true); });
+  $("btn-none").addEventListener("click", ()=>{ play("tap"); setAll(false); });
+  function updateStartButtons(){
+    const ok = state.cats.size > 0;
+    $("btn-train").disabled = !ok;
+    $("btn-blitz").disabled = !ok;
+  }
+
+  /* ---------- Rechenweg ---------- */
+  function setStepMode(m){
+    state.stepMode = m;
+    $("btn-steps").classList.toggle("on", m === "steps");
+    $("btn-result").classList.toggle("on", m === "result");
+    $("diff-hint").textContent = m === "steps"
+      ? "In Schritten: erst Hunderter, dann Zehner, dann Einer dazuzählen – wie im Heft"
+      : "Nur Ergebnis: du rechnest im Kopf und tippst gleich die Lösung";
+  }
+  $("btn-steps").addEventListener("click", ()=>{ play("tap"); setStepMode("steps"); });
+  $("btn-result").addEventListener("click", ()=>{ play("tap"); setStepMode("result"); });
+
+  /* ---------- Aufgaben ---------- */
+  function makeQuestion(){
+    const active = CATS.filter(c=>state.cats.has(c.key));
+    for(let tries=0; tries<30; tries++){
+      const cat = pick(active);
+      const q = pick(cat.variants)();
+      if(q.id !== state.lastKey){
+        state.lastKey = q.id;
+        return q;
+      }
+    }
+    return pick(active[0].variants)();
+  }
+  function buildTrainQueue(){
+    state.queue = [];
+    const used = new Set();
+    let guard = 0;
+    while(state.queue.length < state.totalUnique){
+      const q = makeQuestion();
+      guard++;
+      if(used.has(q.id) && guard < 80) continue;
+      used.add(q.id);
+      state.queue.push(q);
+    }
+  }
+
+  /* ---------- Runde starten ---------- */
+  function startRound(mode){
+    state.mode = mode;
+    state.solvedIds.clear(); state.firstTry = {}; state.attempted = {};
+    state.correct = 0; state.wrong = 0; state.streak = 0; state.bestStreak = 0;
+    state.input = ""; state.locked = false; state.lastKey = "";
+    $("track").classList.remove("launching");
+    $("rocket").textContent = "🚀";
+    if(mode === "train"){
+      buildTrainQueue();
+      $("hud-clock").hidden = true;
+      setProgress(0);
+    }else{
+      state.blitzTime = 60;
+      $("hud-clock").hidden = false;
+      $("hud-clock").textContent = "60s";
+      setProgress(1);
+      state.blitzTimer = setInterval(tick, 1000);
+    }
+    updateHud();
+    show("play");
+    nextQuestion();
+  }
+  function tick(){
+    state.blitzTime--;
+    $("hud-clock").textContent = state.blitzTime + "s";
+    setProgress(state.blitzTime / 60);
+    if(state.blitzTime <= 0){
+      clearInterval(state.blitzTimer); state.blitzTimer = null;
+      finishRound();
+    }
+  }
+  function stopTimer(){
+    if(state.blitzTimer){ clearInterval(state.blitzTimer); state.blitzTimer = null; }
+  }
+
+  /* ---------- Anzeige ---------- */
+  function setProgress(p){
+    const pct = Math.max(0, Math.min(1, p)) * 100;
+    $("track-fill").style.width = pct + "%";
+    $("rocket").style.left = pct + "%";
+  }
+  function updateHud(){
+    $("hud-stars").textContent = "⭐ " + state.stars;
+    $("hud-streak").textContent = state.streak >= 3 ? "🔥 " + state.streak : "";
+    $("session-stars").textContent = "⭐ " + state.stars + " Sterne gesammelt";
+  }
+  function renderQuestion(){
+    const q = state.current;
+    const st = q.steps[q.stepIdx];
+    const multi = q.steps.length > 1;
+    $("task-card").hidden = !multi;
+    $("steps-rail").hidden = !multi;
+    if(multi){
+      $("task-term").textContent = q.a + " " + PLUS + " " + q.b;
+      $("steps-rail").innerHTML = q.steps.map((s,i)=>{
+        const cls = i < q.stepIdx ? "step-chip done" : (i === q.stepIdx ? "step-chip now" : "step-chip");
+        const check = i < q.stepIdx ? "✓ " : "";
+        return '<span class="' + cls + '">' + check + PLUS + "&nbsp;" + s.s + '</span>';
+      }).join("");
+    }
+    $("question").innerHTML = st.m + ' <span class="mal">' + PLUS + '</span> ' + st.s;
+    $("answer").innerHTML = state.input || "&nbsp;";
+    $("feedback").textContent = "\u00A0";
+    $("feedback").className = "feedback";
+    $("stage").classList.remove("good","bad");
+  }
+
+  function nextQuestion(){
+    state.input = "";
+    state.locked = false;
+    if(state.mode === "train"){
+      if(state.solvedIds.size >= state.totalUnique){ finishRound(); return; }
+      state.current = state.queue.shift();
+    }else{
+      state.current = makeQuestion();
+    }
+    prepare(state.current);
+    renderQuestion();
+  }
+
+  /* ---------- Eingabe ---------- */
+  function pressDigit(d){
+    if(state.locked || state.input.length >= 4) return;
+    play("tap");
+    state.input += d;
+    $("answer").textContent = state.input;
+  }
+  function pressDel(){
+    if(state.locked) return;
+    play("tap");
+    state.input = state.input.slice(0,-1);
+    $("answer").innerHTML = state.input || "&nbsp;";
+  }
+  function pressGo(){
+    if(state.locked || state.input === "") return;
+    check(parseInt(state.input,10));
+  }
+
+  $("pad").addEventListener("click", e=>{
+    const b = e.target.closest("button");
+    if(!b) return;
+    if(b.dataset.d !== undefined) pressDigit(b.dataset.d);
+    else if(b.dataset.a === "del") pressDel();
+    else if(b.dataset.a === "go") pressGo();
+  });
+  document.addEventListener("keydown", e=>{
+    if(!$("screen-play").classList.contains("active")) return;
+    if(e.key >= "0" && e.key <= "9") pressDigit(e.key);
+    else if(e.key === "Backspace"){ e.preventDefault(); pressDel(); }
+    else if(e.key === "Enter"){ e.preventDefault(); pressGo(); }
+  });
+
+  /* ---------- Prüfen ---------- */
+  function check(value){
+    const q = state.current;
+    const st = q.steps[q.stepIdx];
+    state.locked = true;
+    const first = !state.attempted[q.id];
+    state.attempted[q.id] = true;
+
+    if(value === st.ans){
+      if(q.stepIdx < q.steps.length - 1){
+        /* Zwischenschritt geschafft – weiter zum nächsten Schritt */
+        q.stepIdx++;
+        $("stage").classList.add("good");
+        $("feedback").textContent = "Richtig! Jetzt noch " + PLUS + " " + q.steps[q.stepIdx].s;
+        $("feedback").className = "feedback good";
+        play("step");
+        setTimeout(()=>{ state.input = ""; state.locked = false; renderQuestion(); }, 900);
+        return;
+      }
+      /* Ganze Aufgabe gelöst */
+      state.correct++;
+      state.streak++;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      state.stars++;
+      if(first) state.firstTry[q.id] = true;
+      if(state.mode === "train"){
+        state.solvedIds.add(q.id);
+        setProgress(state.solvedIds.size / state.totalUnique);
+      }
+      $("stage").classList.add("good");
+      const msg = PRAISE[rnd(PRAISE.length)];
+      $("feedback").textContent = state.streak >= 5 ? msg + " 🔥 " + state.streak + " in Folge!" : msg;
+      $("feedback").className = "feedback good";
+      play("ok");
+      confetti();
+      updateHud();
+      setTimeout(nextQuestion, 750);
+    }else{
+      state.wrong++;
+      state.streak = 0;
+      $("stage").classList.add("bad");
+      $("feedback").textContent = "Fast! " + st.m + " " + PLUS + " " + st.s + " = " + st.ans;
+      $("feedback").className = "feedback bad";
+      play("bad");
+      updateHud();
+      if(state.mode === "train"){
+        /* ganze Aufgabe kommt von vorn – etwas später nochmal */
+        const again = { a:q.a, b:q.b, ans:q.ans, id:q.id };
+        state.queue.splice(Math.min(2, state.queue.length), 0, again);
+      }
+      setTimeout(nextQuestion, 1900);
+    }
+  }
+
+  /* ---------- Konfetti ---------- */
+  function confetti(){
+    const stage = $("stage");
+    const n = state.streak > 0 && state.streak % 5 === 0 ? 16 : 7;
+    for(let i=0;i<n;i++){
+      const s = document.createElement("span");
+      s.className = "spark";
+      s.textContent = ["⭐","✨","🌟"][rnd(3)];
+      s.style.setProperty("--dx", (Math.random()*260-130)+"px");
+      s.style.setProperty("--dy", (-40 - Math.random()*180)+"px");
+      s.style.setProperty("--rot", (Math.random()*240-120)+"deg");
+      stage.appendChild(s);
+      setTimeout(()=>s.remove(), 950);
+    }
+  }
+
+  /* ---------- Runde beenden ---------- */
+  function finishRound(){
+    stopTimer();
+    let starsWon, title, stats;
+    if(state.mode === "train"){
+      $("track").classList.add("launching");
+      const firstTryCount = Object.keys(state.firstTry).length;
+      const quote = firstTryCount / state.totalUnique;
+      starsWon = quote >= .9 ? 3 : quote >= .65 ? 2 : 1;
+      title = starsWon === 3 ? "Rakete gestartet! 🚀" : starsWon === 2 ? "Stark geflogen!" : "Geschafft!";
+      stats = "<b>" + firstTryCount + " von " + state.totalUnique + "</b> Aufgaben gleich beim ersten Versuch richtig<br>" +
+              "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
+    }else{
+      const t3 = state.stepMode === "steps" ? 5 : 7;
+      const t2 = state.stepMode === "steps" ? 3 : 4;
+      starsWon = state.correct >= t3 ? 3 : state.correct >= t2 ? 2 : 1;
+      title = starsWon === 3 ? "Blitzschnell! ⚡" : starsWon === 2 ? "Flotte Runde!" : "Geschafft!";
+      stats = "<b>" + state.correct + "</b> gelöste Aufgaben in 60 Sekunden<br>" +
+              "Beste Serie: <b>" + state.bestStreak + "</b> 🔥 &nbsp;·&nbsp; Sterne heute: <b>" + state.stars + "</b> ⭐";
+    }
+    const spans = $("end-stars").querySelectorAll("span");
+    spans.forEach((s,i)=>s.classList.toggle("won", i < starsWon));
+    $("end-title").textContent = title;
+    $("end-stats").innerHTML = stats;
+    play("win");
+    setTimeout(()=>show("end"), state.mode === "train" ? 900 : 200);
+  }
+
+  /* ---------- Navigation ---------- */
+  $("btn-train").addEventListener("click", ()=>startRound("train"));
+  $("btn-blitz").addEventListener("click", ()=>startRound("blitz"));
+  $("btn-home").addEventListener("click", ()=>{ stopTimer(); updateHud(); show("start"); });
+  $("btn-menu").addEventListener("click", ()=>{ updateHud(); show("start"); });
+  $("btn-again").addEventListener("click", ()=>startRound(state.mode));
+  $("btn-sound").addEventListener("click", ()=>{
+    state.sound = !state.sound;
+    $("btn-sound").textContent = state.sound ? "🔊" : "🔇";
+    play("tap");
+  });
+})();
+</script>
+</body>
+</html>
